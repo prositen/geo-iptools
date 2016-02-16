@@ -1,6 +1,7 @@
 from bisect import bisect_left
 import csv
 import ipaddress
+import os
 
 __author__ = 'Anna'
 
@@ -72,3 +73,78 @@ class DbIP(GeoDb):
                     self.ip.append(GeoItem(row[0], row[1], row[2]))
                 except ValueError:
                     pass
+
+
+class FileDb(GeoDb):
+    """
+    Based on http://www.grantjenks.com/wiki/random/python_binary_search_file_by_line
+    """
+
+    def read(self):
+        pass
+
+    @staticmethod
+    def key(line):
+        return GeoItem(line)
+
+    def lookup(self, x):
+        ip = GeoItem(ipaddress.ip_address(x))
+        # Must be greater than the maximum length of any line.
+        max_line_len = 200
+
+        start = pos = 0
+        end = os.path.getsize(self.file)
+        with open(self.file, 'rb') as fh:
+            # Limit the number of times we binary search.
+            for rpt in range(50):
+                last = pos
+                pos = (start + end) // 2
+                fh.seek(pos)
+
+                # Move the cursor to a newline boundary.
+
+                fh.readline()
+
+                line = fh.readline()
+                linevalue = self.key(line)
+                if linevalue == ip or pos == last:
+
+                    # Seek back until we no longer have a match.
+                    while True:
+                        fh.seek(-max_line_len, 1)
+                        fh.readline()
+                        if ip != self.key(fh.readline()):
+                            break
+
+                    # Seek forward to the first match.
+                    for rpt2 in range(max_line_len):
+                        line = fh.readline()
+                        linevalue = self.key(line)
+                        if ip == linevalue:
+                            return linevalue
+                    else:
+                        # No match was found.
+                        return []
+
+                elif linevalue < ip:
+                    start = fh.tell()
+                else:
+                    assert linevalue > ip
+                    end = fh.tell()
+            else:
+                raise RuntimeError('binary search failed')
+
+
+class DigitalElement(FileDb):
+
+    @staticmethod
+    def key(line):
+        try:
+            line = line.decode()
+        except AttributeError:
+            pass
+        fields = line.split(';')
+        country = fields[5].upper()
+        if country == 'UK':
+            country = 'GB'
+        return GeoItem(fields[0], fields[1], country)

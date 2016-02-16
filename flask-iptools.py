@@ -5,12 +5,12 @@ import ipaddress
 import sys
 from flask import Flask, request
 from flask import render_template
-from iptools import DbIP, MaxMind
+from iptools import DbIP, MaxMind, DigitalElement
 
 app = Flask(__name__)
 __author__ = 'anna'
 
-DBS = [DbIP, MaxMind]
+DBS = [DbIP, MaxMind, DigitalElement]
 
 
 @app.route('/ip', methods=['GET', 'POST'])
@@ -18,7 +18,7 @@ def lookup_ip():
     if request.method == 'POST':
         ips = list()
         if 'iplist' in request.form and len(request.form['iplist']):
-            ips = '\n'.split(request.form['iplist'])
+            ips = [ip for ip in request.form['iplist'].split('\n') if len(ip.strip())]
         elif 'ipfile' in request.files:
             ips = request.files['ipfile'].readlines()
 

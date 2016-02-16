@@ -86,8 +86,37 @@ class DbIP(Geo):
         DbIP.database = geo_db.DbIP(DbIP.DBIP_COUNTRY)
 
 
+class DigitalElement(Geo):
+    DE_COUNTRY = './data/geodb.csv.20160211122650'
+    database = None
+
+    def __init__(self, ip):
+        if self.database is not None:
+            self.setup()
+        self.data = self.database.lookup(ip)
+
+    def country(self):
+        try:
+            return self.data.data
+        except AttributeError:
+            return '?'
+
+    @staticmethod
+    def version():
+        return "2016-02-11"
+
+    @staticmethod
+    def name():
+        return "Digital Element"
+
+    @staticmethod
+    def setup():
+        import geo_db
+        DigitalElement.database = geo_db.DigitalElement(DigitalElement.DE_COUNTRY)
+
+
 def main(args):
-    dbs = [MaxMind, DbIP]
+    dbs = [MaxMind, DbIP, DigitalElement]
     ip_to_response = dict()
     for ip in fileinput.input(args, openhook=fileinput.hook_compressed):
         try:
