@@ -96,19 +96,17 @@ class FileDb(GeoDb):
         end = os.path.getsize(self.file)
         with open(self.file, 'rb') as fh:
             # Limit the number of times we binary search.
-            for rpt in range(50):
+            for rpt in range(200):
                 last = pos
                 pos = (start + end) // 2
-                fh.seek(pos)
+                fh.seek(pos-max_line_len)
 
                 # Move the cursor to a newline boundary.
-
                 fh.readline()
 
                 line = fh.readline()
                 linevalue = self.key(line)
                 if linevalue == ip or pos == last:
-
                     # Seek back until we no longer have a match.
                     while True:
                         fh.seek(-max_line_len, 1)
@@ -124,7 +122,7 @@ class FileDb(GeoDb):
                             return linevalue
                     else:
                         # No match was found.
-                        return []
+                        return ""
 
                 elif linevalue < ip:
                     start = fh.tell()
@@ -144,7 +142,10 @@ class DigitalElement(FileDb):
         except AttributeError:
             pass
         fields = line.split(';')
-        country = fields[5].upper()
-        if country == 'UK':
-            country = 'GB'
-        return GeoItem(fields[0], fields[1], country)
+        try:
+            country = fields[5].upper()
+            if country == 'UK':
+                country = 'GB'
+            return GeoItem(fields[0], fields[1], country)
+        except IndexError:
+            print(line)
