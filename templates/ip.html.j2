@@ -1,0 +1,83 @@
+{% include 'header.html.j2' %}
+<body>
+<header>
+    <div class="container">
+        <div class="page-header"><h1>Geo lookup</h1></div>
+    </div>
+</header>
+
+<div class="container">
+    <form class="form-horizontal" action="{{ url_for('lookup_ip') }}" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <div class="col-md-6">
+                <textarea class="form-control" placeholder="Paste IP list here" name="iplist" id="iplist"></textarea>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-6">
+                <div class="fileinput fileinput-new input-group" data-provides="fileinput">
+                    <div class="form-control" data-trigger="fileinput">
+                        <i class="glyphicon glyphicon-file fileinput-exists"></i>
+                        <span class="fileinput-filename"></span>
+                    </div>
+                    <span class="input-group-addon btn btn-default btn-file">
+                        <span class="fileinput-new">Or chose file</span>
+                        <span class="fileinput-exists">Change</span>
+                        <input type="file" name="ipfile" id="ipfile">
+                    </span>
+                    <a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-6">
+                <input type="text" name="filter" id="filter" class="form-control" placeholder="Hide entries where country is" value="{{ filter }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-6">
+                <input type="submit" class="form-control">
+            </div>
+        </div>
+    </form>
+
+
+    {% if ipinfo %}
+    <form class="form-horizontal">
+        <div class="form-group">
+            <div class="col-md-2 pull-right">
+                <a href="#" id="download-csv" class="btn btn-info" role="button">Download CSV</a>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-md-12">
+                <table class="table table-bordered" id="ipinfo">
+                <thead>
+                    <tr>
+                        <th data-sort="int">IP</th>
+                        <th data-sort="int">#</th>{% for db in dbs %}
+                        <th data-sort="string">{{ db[0] }}<br> {{ db[1] }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>{% for ip, info in ipinfo.items() %}
+                    <tr>
+                        <td data-sort-value="{{ info.meta.ip_as_int }}">{{ ip }}</td>
+                        <td>{{ info.meta.occurrences }}</td>{% for db in dbs %}
+                        <td>{{ info[db[0]].country() }}</td>
+                        {% endfor %}
+                    </tr>{% endfor %}
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+    <script>
+        $("#ipinfo").stupidtable();
+        $("#download-csv").on('click', function() {
+            CSV.begin('#ipinfo').download("ip.csv").go();
+        });
+    </script>
+    {% endif %}
+    </div>
+</body>
+{% include 'footer.html.j2' %}

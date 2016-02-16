@@ -16,15 +16,19 @@ class Geo(object):
     def name():
         return "Geo"
 
+    @staticmethod
+    def setup():
+        pass
+
 
 class MaxMind(Geo):
-    import geoip2.database
     """ Set the path to your Maxmind Country geo data file """
     MAXMIND_COUNTRY = './data/GeoLite2-Country.mmdb'
-
-    reader = geoip2.database.Reader(MAXMIND_COUNTRY)
+    reader = None
 
     def __init__(self, ip):
+        if self.reader is None:
+            self.setup()
         try:
             self.response = self.reader.country(ip)
         except ValueError:
@@ -47,14 +51,19 @@ class MaxMind(Geo):
     def name():
         return "Maxmind"
 
+    @staticmethod
+    def setup():
+        import geoip2.database
+        MaxMind.reader = geoip2.database.Reader(MaxMind.MAXMIND_COUNTRY)
+
 
 class DbIP(Geo):
-    import geo_db
-    DBIP_COUNTRY = './data/dbip-country.csv'
-
-    database = geo_db.DbIP(DBIP_COUNTRY)
+    DBIP_COUNTRY = './data/dbip-country-v4.csv'
+    database = None
 
     def __init__(self, ip):
+        if self.database is None:
+            self.setup()
         self.data = self.database.lookup(ip)
 
     def country(self):
@@ -70,6 +79,11 @@ class DbIP(Geo):
     @staticmethod
     def name():
         return "DbIP"
+
+    @staticmethod
+    def setup():
+        import geo_db
+        DbIP.database = geo_db.DbIP(DbIP.DBIP_COUNTRY)
 
 
 def main(args):

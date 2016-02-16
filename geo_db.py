@@ -1,22 +1,29 @@
+from bisect import bisect_left
 import csv
 import ipaddress
-import math
 
 __author__ = 'Anna'
 
 
 class GeoItem(object):
-    def __init__(self, start, end, data):
-        self.start = ipaddress.ip_address(start)
-        self.end = ipaddress.ip_address(end)
+    def __init__(self, start, end=None, data=None):
+        ipstart = ipaddress.ip_address(start)
+        self.start = int(ipstart)
+        if end:
+            self.end = int(ipaddress.ip_address(end))
+        else:
+            self.end = self.start
         self.data = data
-        self.version = self.start.version
+        self.version = ipstart.version
 
     def __lt__(self, other):
         if self.version == other.version:
-            return self.start < other.start
+            return self.start < other.start and self.end < other.end
         else:
             return self.version < other.version
+
+    def __eq__(self, other):
+        return self.contains(other)
 
     def contains(self, other):
         """
@@ -45,46 +52,23 @@ class GeoDb(object):
         self.ip = list()
         self.read()
 
-    def __len__(self):
-        return len(self.ip)
-
-    def lookup(self, ip):
-        ip = ipaddress.ip_address(ip)
-        return self.lookup_rec(GeoItem(ip, ip, None))
-
-    def lookup_rec(self, ip, start=0, end=None, maxiter=None):
-        if maxiter == 0:
-            return ""
-        if end is None:
-            end = len(self)
-            maxiter = math.ceil(math.log(end, 2))
-
-        mid = start + ((end - start) // 2)
-        mid_item = self.ip[mid]
-
-        if mid_item.contains(ip):
-            return mid_item
-        elif mid == start:
-            if self.ip[end].contains(ip):
-                return self.ip[end]
-            return ""
-        elif mid == end:
-            if self.ip[start].contains(ip):
-                return self.ip[start]
-            return ""
-        elif ip < mid_item:
-            return self.lookup_rec(ip, start, mid-1, maxiter-1)
-        else:
-            return self.lookup_rec(ip, mid+1, end, maxiter-1)
+    def lookup(self, x):
+        """Locate the leftmost value exactly equal to x"""
+        ip = GeoItem(ipaddress.ip_address(x))
+        i = bisect_left(self.ip, ip)
+        if i != len(self.ip) and self.ip[i] == ip:
+            return self.ip[i]
+        return ""
 
 
 class DbIP(GeoDb):
 
     def read(self):
         """Format is "start","end","country code" """
-        reader = csv.reader(open(self.file, 'r'))
-        for row in reader:
-            try:
-                self.ip.append(GeoItem(row[0], row[1], row[2]))
-            except ValueError:
-                pass
+        with open(self.file, 'r') as fh:
+            reader = csv.reader(fh)
+            for row in reader:
+                try:
+                    self.ip.append(GeoItem(row[0], row[1], row[2]))
+                except ValueError:
+                    pass
