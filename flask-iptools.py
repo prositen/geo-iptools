@@ -5,12 +5,12 @@ import ipaddress
 import sys
 from flask import Flask, request
 from flask import render_template
-from iptools import DbIP, MaxMind, DigitalElement
+from iptools import DbIP, MaxMind, DigitalElement, Software77
 
 app = Flask(__name__)
 __author__ = 'anna'
 
-DBS = [DbIP, MaxMind, DigitalElement]
+DBS = [DbIP, MaxMind, DigitalElement, Software77]
 
 
 @app.route('/ip', methods=['GET', 'POST'])
@@ -43,6 +43,10 @@ def lookup_ip():
                         lookup[ip]['meta']['dbs_agree'] = False
                     country = dbinfo.country()
                     lookup[ip][db.name()] = dbinfo
+                    try:
+                        lookup[ip]['meta']['connection_speed'] = dbinfo.connection_speed()
+                    except AttributeError:
+                        pass
                 if lookup[ip]['meta']['dbs_agree']:
                     lookup[ip]['meta']['country'] = country
 

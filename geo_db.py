@@ -75,6 +75,29 @@ class DbIP(GeoDb):
                     pass
 
 
+def comment_stripper(iterator):
+    for line in iterator:
+        if line[:1] == '#':
+            continue
+        if not line.strip():
+            continue
+        yield line
+
+
+class Software77(GeoDb):
+
+    def read(self):
+        """Form is start, end, registry, assigned, country code 2, country code 3, country name"""
+        with open(self.file, 'r') as fh:
+            reader = csv.reader(comment_stripper(fh))
+            for row in reader:
+                try:
+                    self.ip.append(GeoItem(int(row[0]), int(row[1]), row[4]))
+                except ValueError as e:
+                    print(e)
+                    pass
+
+
 class FileDb(GeoDb):
     """
     Based on http://www.grantjenks.com/wiki/random/python_binary_search_file_by_line
@@ -137,6 +160,11 @@ class DigitalElement(FileDb):
 
     @staticmethod
     def key(line):
+        """
+        Format: start, end, region code, connection speed, city code, country, ?, carrier
+        :param line:
+        :return:
+        """
         try:
             line = line.decode()
         except AttributeError:
@@ -146,6 +174,8 @@ class DigitalElement(FileDb):
             country = fields[5].upper()
             if country == 'UK':
                 country = 'GB'
-            return GeoItem(fields[0], fields[1], country)
+            return GeoItem(fields[0], fields[1], {'country': country,
+                                                  'connection_speed': fields[3],
+                                                  'carrier': fields[7]})
         except IndexError:
             print(line)

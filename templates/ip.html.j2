@@ -57,6 +57,7 @@
                         <th data-sort="int">IP</th>
                         <th data-sort="int">#</th>{% for db in dbs %}
                         <th data-sort="string">{{ db[0] }}<br> {{ db[1] }}</th>{% endfor %}
+                        <th data-sort="string">Connection speed</th>
                     </tr>
                 </thead>
                 <tbody>{% for ip, info in ipinfo.items() %}
@@ -65,6 +66,7 @@
                         <td>{{ info.meta.occurrences }}</td>{% for db in dbs %}
                         <td>{{ info[db[0]].country() }}</td>
                         {% endfor %}
+                        <td>{{ info.meta.connection_speed }}</td>
                     </tr>{% endfor %}
                 </tbody>
                 </table>

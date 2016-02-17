@@ -91,13 +91,19 @@ class DigitalElement(Geo):
     database = None
 
     def __init__(self, ip):
-        if self.database is not None:
+        if self.database is None:
             self.setup()
         self.data = self.database.lookup(ip)
 
     def country(self):
         try:
-            return self.data.data
+            return self.data.data['country']
+        except AttributeError:
+            return '?'
+
+    def connection_speed(self):
+        try:
+            return self.data.data['connection_speed']
         except AttributeError:
             return '?'
 
@@ -115,8 +121,37 @@ class DigitalElement(Geo):
         DigitalElement.database = geo_db.DigitalElement(DigitalElement.DE_COUNTRY)
 
 
+class Software77(Geo):
+    FILENAME = "./data/IpToCountry.csv"
+    database = None
+
+    def __init__(self, ip):
+        if self.database is None:
+            self.setup()
+        self.data = self.database.lookup(ip)
+
+    def country(self):
+        try:
+            return self.data.data
+        except AttributeError:
+            return '?'
+
+    @staticmethod
+    def version():
+        return "2016-02-15"
+
+    @staticmethod
+    def name():
+        return "Software 77"
+
+    @staticmethod
+    def setup():
+        import geo_db
+        Software77.database = geo_db.Software77(Software77.FILENAME)
+
+
 def main(args):
-    dbs = [MaxMind, DbIP, DigitalElement]
+    dbs = [MaxMind, DbIP, DigitalElement, Software77]
     ip_to_response = dict()
     for ip in fileinput.input(args, openhook=fileinput.hook_compressed):
         try:
